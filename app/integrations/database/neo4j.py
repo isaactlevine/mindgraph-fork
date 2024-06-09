@@ -24,12 +24,13 @@ def remove_spaces(data):
 
 
 class Neo4jDBIntegration(DatabaseIntegration):
-    def __init__(self, schema_file_path="schema.json"):
-        # Connect to Neo4j
+    def __init__(self, schema_file_path="schema.json", database=NEO4J_DATABASE):
+        self._database = database
         self._driver = GraphDatabase.driver(
-            NEO4J_URI, auth=(NEO4J_USERNAME, NEO4J_PASSWORD)
+            NEO4J_URI, auth=(NEO4J_USERNAME, NEO4J_PASSWORD), database=database
         )
-
+        print("hahahahah")
+        print(database)
     def add_entity(self, entity_type, data):
         data["data"] = remove_spaces(data["data"])
 
@@ -191,8 +192,14 @@ class Neo4jDBIntegration(DatabaseIntegration):
 
         return [e["type"] for e in edges]
 
+    def get_databases(self):
+        q = "SHOW DATABASES"
+        result = self._query(q)
+        return [db["name"] for db in result]
+
     def _query(self, cypher, params={}):
-        with self._driver.session(database=NEO4J_DATABASE) as session:
+        with self._driver.session(database=self._database) as session:
             data = session.run(cypher, params)
             json_data = [r.data() for r in data]
             return json_data
+

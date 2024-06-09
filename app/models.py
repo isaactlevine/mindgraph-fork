@@ -7,6 +7,9 @@ def set_database_integration(db_integration_instance):
 
 
 def add_entity(entity_type, data):
+  global current_db_integration
+  print("AYOO!!!")
+  print(current_db_integration._database)
   return current_db_integration.add_entity(entity_type, data)
 
 

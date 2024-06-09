@@ -40,7 +40,11 @@ def create_app(setup_callbacks=None):
   # Initialize integrations
   initialize_integrations(app)
 
-  db_integration_instance = CurrentDBIntegration()
+  if CurrentDBIntegration is None:
+    db_integration_instance = InMemoryDatabase()
+  else:
+    db_integration_instance = CurrentDBIntegration
+
   set_database_integration(db_integration_instance)
 
   # If setup_callbacks is None, initialize as empty list

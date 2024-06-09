@@ -3,6 +3,9 @@
 *.pyo
 *.pyd
 
+#virtual environments
+myvenv/
+
 # Caches
 __pycache__/
 

@@ -205,7 +205,6 @@ def natural_input(app, data):
             # Assume create_knowledge_graph returns the correct data structure
             knowledge_graph_data = create_knowledge_graph(app, data)
             knowledge_graph_data = json.loads(knowledge_graph_data)
-
             # Retrieve the callable function for the add_multiple_conditional integration
             print("get function")
             add_multiple_conditional_function = get_integration_function(

@@ -12,6 +12,8 @@
 # interacting with the database through model functions, and sending responses in JSON format. Signals are used to notify
 # other parts of the application about the creation, update, or deletion of entities.
 
+from app.integrations.database.neo4j import Neo4jDBIntegration
+from .models import set_database_integration
 from flask import (
     Blueprint,
     send_from_directory,
@@ -20,7 +22,8 @@ from flask import (
     request,
     render_template,
 )
-import os
+import os, json
+from neo4j import GraphDatabase, graph
 from .models import (
     add_entity,
     get_full_graph,
@@ -35,6 +38,13 @@ from .models import (
 )
 from .signals import entity_created, entity_updated, entity_deleted
 from .integration_manager import get_integration_function
+from .integrations.database import CurrentDBIntegration
+
+
+NEO4J_URI = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
+NEO4J_USERNAME = os.environ.get("NEO4J_USERNAME", "neo4j")
+NEO4J_PASSWORD = os.environ.get("NEO4J_PASSWORD", "password")
+
 
 main = Blueprint("main", __name__)
 
@@ -44,13 +54,35 @@ def index():
   return render_template("index.html")
 
 
+class CustomJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if obj is None:
+            return None
+        return super().default(obj)
+
 @main.route("/get-graph-data", methods=["GET"])
 def get_graph_data():
-  # Assuming get_all_entities returns all the graph data you need
-  all_entities = get_full_graph()
-  print("ALL ENTITIES")
-  print(all_entities)
-  return jsonify(all_entities), 200
+    global CurrentDBIntegration
+    all_entities = CurrentDBIntegration.get_full_graph()
+    db_name = CurrentDBIntegration._database
+    print("Database Name:", db_name)
+    print("ALL ENTITIES")
+    print(all_entities)
+
+    # Filter out None values from all_entities
+    filtered_entities = {}
+    for k, v in all_entities.items():
+        if isinstance(v, dict):
+            filtered_entities[k] = {kk: vv for kk, vv in v.items() if vv is not None}
+        elif isinstance(v, list):
+            filtered_entities[k] = [item for item in v if item is not None]
+        else:
+            filtered_entities[k] = v
+
+    return current_app.response_class(
+        json.dumps(filtered_entities, cls=CustomJSONEncoder),
+        mimetype='application/json'
+    )
 
 
 @main.route("/favicon.ico")
@@ -169,6 +201,31 @@ def search_relationship():
     return jsonify(results), 200
 
   return jsonify(error="Missing search parameters"), 400
+
+
+@main.route("/databases", methods=["GET"])
+def get_databases():
+    databases = CurrentDBIntegration.get_databases()
+    return jsonify(databases), 200
+
+
+@main.route("/set-database/<db_name>", methods=["POST"])
+def set_database(db_name):
+    global CurrentDBIntegration
+    CurrentDBIntegration._driver.close()
+    CurrentDBIntegration = Neo4jDBIntegration(database=db_name)
+    current_app.config["SELECTED_DB"] = db_name  # Set the selected database name
+    
+    # Update the current_db_integration in models.py
+    set_database_integration(CurrentDBIntegration)
+    
+    return jsonify({"message": "Database switched"}), 200
+
+
+@main.route("/current-database", methods=["GET"])
+def current_database():
+    global CurrentDBIntegration
+    return jsonify({"current_db_integration": CurrentDBIntegration.__class__.__name__}), 200
 
 
 # Add more routes as needed for specific actions, queries, etc.

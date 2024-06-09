@@ -1,4 +1,26 @@
 $(document).ready(function () {
+  // Fetch available databases and populate the dropdown
+  fetch("/databases")
+    .then((response) => response.json())
+    .then((databases) => {
+      const dbSelector = $("#db-selector");
+      databases.forEach((db) => {
+        dbSelector.append(new Option(db, db));
+      });
+    });
+
+  // Event listener for database selection
+  $("#db-selector").change(function () {
+    const selectedDb = $(this).val();
+    fetch(`/set-database/${selectedDb}`, { method: "POST" })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("Database switched:", data);
+        fetchAndUpdateGraph(); // Refresh the graph with the new database
+      })
+      .catch((error) => console.error("Error switching database:", error));
+  });
+
   var cy = cytoscape({
     container: document.getElementById("cy"),
     elements: [
