@@ -2,6 +2,7 @@
 
 - Added Neo4J integration
 - Added ability to save and dynamically load multiple KGs saved to a single Neo4j DBMS instance
+- Added feature where there is a natural language description of each avaialble db stored by the application, and it is updated every time there is a change to the respective graph
 
 
 # MindGraph
