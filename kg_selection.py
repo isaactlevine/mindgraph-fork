@@ -38,6 +38,7 @@ def summarize_and_store_graph(app, database_name):
         
         # Extract the summary from the GPT-4 response
         summary = response.choices[0].message['content'].strip()
+        print("88888888888888888888888")
         print(summary)
         
         # Store the summary in the globally available dictionary

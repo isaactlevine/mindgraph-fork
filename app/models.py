@@ -16,7 +16,7 @@ def add_entity(entity_type, data):
 
 
 def get_full_graph():
-  return current_db_integration.get_full_graph()
+    return current_db_integration.get_full_graph(database=current_app.config["SELECTED_DB"])
 
 
 def get_entity(entity_type, entity_id):

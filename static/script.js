@@ -123,33 +123,53 @@ $(document).ready(function () {
 
   $("#search-btn").on("click", function () {
     var query = $("#search-box").val();
-    // Perform the AJAX request to the dynamic endpoint
-    fetch("/trigger-integration/ai_search", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(query),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("Success:", data);
-        answer = data.answer;
-        triplets = data.triplets;
-        console.log("Success:", answer);
-        $("#answer").html("<small>" + triplets + "</small></br>" + answer);
+    
+    // Show placeholder in the sidebar
+    $("#sidebar").html("<p>Finding the most relevant graph...</p>");
+    
+    // Delay the AJAX request slightly to ensure the placeholder is rendered
+    setTimeout(function() {
+      // Perform the AJAX request to the dynamic endpoint
+      fetch("/trigger-integration/ai_search", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(query),
       })
-      .catch((error) => console.error("Error:", error));
+        .then((response) => response.json())
+        .then((data) => {
+          console.log("Success:", data);
+          answer = data.answer;
+          triplets = data.triplets;
+          console.log("Success:", answer);
+          $("#answer").html("<small>" + triplets + "</small></br>" + answer) // Show the selected database
+          $("#db-selector").val(data.selected_db); // Set the selected database in the dropdown
 
-    var results = cy.elements().filter(function (element) {
-      var name = element.data("name");
-      return name && name.toLowerCase().includes(query.toLowerCase());
-    });
+          // Set the database on the server
+          fetch(`/set-database/${data.selected_db}`, { method: "POST" })
+            .then((response) => response.json())
+            .then((dbData) => {
+              console.log("Database switched:", dbData);
+              fetchAndUpdateGraph(); // Refresh the graph with the new database
+            })
+            .catch((error) => console.error("Error switching database:", error));
 
-    cy.elements().removeClass("highlighted");
-    results.addClass("highlighted");
+          var results = cy.elements().filter(function (element) {
+            var name = element.data("name");
+            return name && name.toLowerCase().includes(query.toLowerCase());
+          });
 
-    updateSidebarWithSearchResults(results);
+          cy.elements().removeClass("highlighted");
+          results.addClass("highlighted");
+          // Update the sidebar with search results
+          console.log('11111111')
+          console.log(results)
+          $("#sidebar").html("");
+          showSelectedDatabase(data.selected_db);
+        })
+        .catch((error) => console.error("Error:", error));
+    }, 100); // 100ms delay to ensure the placeholder is rendered
   });
 
   // Function to update sidebar with search results
@@ -384,4 +404,35 @@ $(document).ready(function () {
     console.log("File selected:", fileName);
     // Optionally, update the UI to show the selected file name
   });
+
+  // Show selected database in sidebar for 3 seconds
+  function showSelectedDatabase(selectedDb) {
+    const dbInfo = $('<div>').text(`Selected Database: ${selectedDb}`);
+    $('#sidebar').append(dbInfo);
+    setTimeout(() => dbInfo.remove(), 10000);
+  }
+
+  // Handle AI search
+  $('#ai-search-btn').click(function() {
+    const query = $('#ai-search-input').val();
+    console.log("Query:", query);
+    
+    fetch(`/ai-search?q=${encodeURIComponent(query)}`)
+      .then(response => response.json())
+      .then(data => {
+        console.log("Received data:", data);
+        console.log("Selected Database:", data.selected_db);
+        showSelectedDatabase(data.selected_db);
+        
+        console.log("Search Quality Reflection:", data.search_quality_reflection);
+        console.log("Search Quality Score:", data.search_quality_score);
+        console.log("Result:", data.result);
+        
+        $('#search-quality-reflection').text(data.search_quality_reflection);
+        $('#search-quality-score').text(data.search_quality_score);
+        $('#result').html(data.result);
+      })
+      .catch(error => console.error('Error:', error));
+  });
 });
+

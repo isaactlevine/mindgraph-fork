@@ -41,51 +41,56 @@ class Neo4jDBIntegration(DatabaseIntegration):
         # return entity ID
         return result[0]["id"]
 
-    def get_full_graph(self):
+    def get_full_graph(self, database=None):
+        if database is None:
+            database = self._database
+
         graph = {
             "entities": {},
             "relationships": [],
         }
 
-        # get nodes
-        nodes = self._query(
-            "MATCH (n) RETURN n, elementId(n) AS id, labels(n)[0] AS label"
-        )
-        for node in nodes:
-            lbl = node["label"]
-            id = node["id"]
-            node_props = node["n"]
+        with self._driver.session(database=database) as session:
+            # get nodes
+            nodes = session.run(
+                "MATCH (n) RETURN n, elementId(n) AS id, labels(n)[0] AS label"
+            )
+            for node in nodes:
+                lbl = node["label"]
+                id = node["id"]
+                node_props = dict(node["n"])  # Convert Node object to dict
 
-            if lbl not in graph["entities"]:
-                graph["entities"][lbl] = {}
+                if lbl not in graph["entities"]:
+                    graph["entities"][lbl] = {}
 
-            graph["entities"][lbl][id] = {"entity_type": lbl, "data": node_props}
+                graph["entities"][lbl][id] = {"entity_type": lbl, "data": node_props}
 
-        # get edges
-        results = self._query(
-            """
-                              MATCH (src)-[e]->(dest)
-                              RETURN elementId(src) AS src_id,
-                                     labels(src)[0] AS from_type,
-                                     type(e) AS relationship,
-                                     elementId(dest) AS dest_id,
-                                     labels(dest)[0] AS to_type
-                              """
-        )
-        for row in results:
-            desc = {
-                "relationship": row["relationship"],
-                "snippet": row["relationship"],
-                "from_id": row["src_id"],
-                "to_id": row["dest_id"],
-                "from_type": row["from_type"],
-                "to_type": row["to_type"],
-                "from_entity": "",
-                "to_entity": "",
-                "relationship_type": row["relationship"],
-            }
+            # get edges
+            results = session.run(
+                """
+                MATCH (src)-[e]->(dest)
+                RETURN elementId(src) AS src_id,
+                    labels(src)[0] AS from_type,
+                    type(e) AS relationship,
+                    elementId(dest) AS dest_id,
+                    labels(dest)[0] AS to_type,
+                    properties(e) AS edge_props
+                """
+            )
+            for row in results:
+                desc = {
+                    "relationship": row["relationship"],
+                    "snippet": row["edge_props"].get("snippet", row["relationship"]),
+                    "from_id": row["src_id"],
+                    "to_id": row["dest_id"],
+                    "from_type": row["from_type"],
+                    "to_type": row["to_type"],
+                    "from_entity": "",
+                    "to_entity": "",
+                    "relationship_type": row["relationship"],
+                }
 
-            graph["relationships"].append(desc)
+                graph["relationships"].append(desc)
 
         return graph
 

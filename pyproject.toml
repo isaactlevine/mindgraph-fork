@@ -22,6 +22,8 @@ beautifulsoup4 = "^4.9.3"
 nebula3-python = "^3.5.0"
 falkordb = "^1.0.3"
 neo4j = "^5.19.0"
+scikit-learn = "^1.5.0"
+plotly = "^5.22.0"
 
 [tool.pyright]
 # https://github.com/microsoft/pyright/blob/main/docs/configuration.md

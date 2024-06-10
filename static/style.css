@@ -23,7 +23,7 @@ body, html {
     margin-bottom: 5px; /* Ensure spacing between elements */
 }
 
-#search-btn, #add-data-btn, #submit-data-btn, #refresh-btn { /* Consistent button styling */
+#search-btn, #add-data-btn, #submit-data-btn, #refresh-btn, #db-selector { /* Consistent button styling */
     padding: 5px;
     margin-right: 5px; /* Ensure spacing between buttons if placed side by side */
 }

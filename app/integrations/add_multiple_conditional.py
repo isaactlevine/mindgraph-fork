@@ -129,6 +129,7 @@ def add_multiple_conditional(app, data):
           # Summarize and store the updated graph
           database_name = app.config["SELECTED_DB"]
           print(database_name)
+          print("444444444444444")
           summarize_and_store_graph(app, database_name)
           
 
