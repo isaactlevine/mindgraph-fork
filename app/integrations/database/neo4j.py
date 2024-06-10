@@ -29,8 +29,6 @@ class Neo4jDBIntegration(DatabaseIntegration):
         self._driver = GraphDatabase.driver(
             NEO4J_URI, auth=(NEO4J_USERNAME, NEO4J_PASSWORD), database=database
         )
-        print("hahahahah")
-        print(database)
     def add_entity(self, entity_type, data):
         data["data"] = remove_spaces(data["data"])
 

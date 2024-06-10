@@ -1,6 +1,7 @@
 # A Fork of Mindgraph With Added Functionality
 
-Save and dynamically load multiple KGs saved to a Neo4j DBMS instance
+- Added Neo4J integration
+- Added ability to save and dynamically load multiple KGs saved to a single Neo4j DBMS instance
 
 
 # MindGraph

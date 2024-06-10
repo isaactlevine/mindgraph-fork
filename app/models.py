@@ -1,5 +1,6 @@
 current_db_integration = None
-
+from flask import current_app
+from app.integrations.database.neo4j import Neo4jDBIntegration
 
 def set_database_integration(db_integration_instance):
   global current_db_integration
@@ -9,6 +10,7 @@ def set_database_integration(db_integration_instance):
 def add_entity(entity_type, data):
   global current_db_integration
   print("AYOO!!!")
+  current_db_integration = Neo4jDBIntegration(database=current_app.config["SELECTED_DB"])
   print(current_db_integration._database)
   return current_db_integration.add_entity(entity_type, data)
 

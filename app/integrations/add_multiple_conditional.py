@@ -24,6 +24,7 @@
 # app/integrations/add_multiple_nodes_and_relationships.py
 from flask import jsonify
 from app.integration_manager import get_integration_function
+from kg_selection import summarize_and_store_graph
 
 
 def add_multiple_conditional(app, data):
@@ -125,6 +126,11 @@ def add_multiple_conditional(app, data):
         else:
           # Handle the case where a new relationship is created
           print(f"New relationship added with data: {relationship_data}")
+          # Summarize and store the updated graph
+          database_name = app.config["SELECTED_DB"]
+          print(database_name)
+          summarize_and_store_graph(app, database_name)
+          
 
       return jsonify({
           "success": True,

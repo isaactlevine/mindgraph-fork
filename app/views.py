@@ -215,10 +215,6 @@ def set_database(db_name):
     CurrentDBIntegration._driver.close()
     CurrentDBIntegration = Neo4jDBIntegration(database=db_name)
     current_app.config["SELECTED_DB"] = db_name  # Set the selected database name
-    
-    # Update the current_db_integration in models.py
-    set_database_integration(CurrentDBIntegration)
-    
     return jsonify({"message": "Database switched"}), 200
 
 
@@ -229,3 +225,4 @@ def current_database():
 
 
 # Add more routes as needed for specific actions, queries, etc.
+
