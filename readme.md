@@ -1,4 +1,4 @@
-# A Fork of Mindgraph With Added Functionality
+# A Fork of Mindgraph with Cross-Graph Search functionality
 
 I added Neo4J integration and the ability to save, load, and query multiple KGs saved to a single Neo4j DBMS instance.
 
