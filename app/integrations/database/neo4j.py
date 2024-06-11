@@ -1,6 +1,7 @@
 import os
 from neo4j import GraphDatabase
 from .base import DatabaseIntegration
+from flask import current_app 
 
 NEO4J_URI = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
 NEO4J_USERNAME = os.environ.get("NEO4J_USERNAME", "neo4j")
@@ -153,17 +154,27 @@ class Neo4jDBIntegration(DatabaseIntegration):
 
     def search_entities(self, search_params):
         search_params = remove_spaces(search_params)
-
         filters = " AND ".join([f"n.{key} = ${key}" for key in search_params])
+        
+        print('Debug: search_params after remove_spaces:', search_params)
+        print('Debug: filters:', filters)
+        
         q = f"""MATCH (n)
                 WHERE {filters}
                 RETURN n, labels(n)[0] AS label, elementId(n) AS id"""
-
+        
+        print('Debug: query:', q)
+        
         nodes = self._query(q, search_params)
+        
+        print('Debug: raw nodes returned by query:', nodes)
+        
         results = []
         for n in nodes:
             results.append({"type": n["label"], "id": n["id"], **n["n"]})
-
+        
+        print('Debug: processed results:', results)
+        
         return results
 
     def search_entities_with_type(self, entity_type, search_params):
@@ -185,15 +196,50 @@ class Neo4jDBIntegration(DatabaseIntegration):
     def search_relationships(self, search_params):
         search_params = remove_spaces(search_params)
 
-        filters = " AND ".join([f"e.{key} = ${key}" for key in search_params])
+        # Check if search_params contains 'name' and get the corresponding node ID
+        if 'name' in search_params:
+            node_name = search_params['name']
+            node_query = f"""MATCH (n)
+                            WHERE n.name = $name
+                            RETURN elementId(n) AS id"""
+            node_result = self._query(node_query, {"name": node_name})
+            if node_result:
+                node_id = node_result[0]["id"]
+            else:
+                return []
+        else:
+            return []
 
-        q = f"""MATCH (n)-[e]->()
-               WHERE {filters}
-               RETURN type(e) AS type"""
+        q = f"""MATCH (src)-[e]->(dest)
+                WHERE elementId(src) = $node_id OR elementId(dest) = $node_id
+                RETURN elementId(src) AS from_temp_id,
+                    labels(src)[0] AS from_type,
+                    type(e) AS relationship,
+                    elementId(dest) AS to_temp_id,
+                    labels(dest)[0] AS to_type,
+                    properties(e) AS edge_props"""
 
-        edges = self._query(q, search_params)
+        print('Debug: query:', q)
+        
+        edges = self._query(q, {"node_id": node_id})
 
-        return [e["type"] for e in edges]
+        results = []
+        for edge in edges:
+            edge_data = {
+                "from_temp_id": edge["from_temp_id"],
+                "to_temp_id": edge["to_temp_id"],
+                "relationship": edge["relationship"],
+                "from_type": edge["from_type"],
+                "to_type": edge["to_type"],
+                "data": edge["edge_props"]
+            }
+            results.append(edge_data)
+
+        print('Debug: processed relationships:', results)
+
+        return results
+
+
 
     def get_databases(self):
         q = "SHOW DATABASES"
@@ -201,7 +247,9 @@ class Neo4jDBIntegration(DatabaseIntegration):
         return [db["name"] for db in result]
 
     def _query(self, cypher, params={}):
-        with self._driver.session(database=self._database) as session:
+        selected_db = current_app.config.get("SELECTED_DB", self._database)
+        with self._driver.session(database=selected_db) as session:
+            print("Using database:", selected_db)
             data = session.run(cypher, params)
             json_data = [r.data() for r in data]
             return json_data

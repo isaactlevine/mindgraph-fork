@@ -1,6 +1,6 @@
 import os
 import openai
-from flask import jsonify
+from flask import jsonify, current_app
 import json
 from app.models import get_full_graph, search_entities, search_relationships
 from kg_selection import load_graph_summaries
@@ -11,47 +11,49 @@ openai.api_key = os.getenv('OPENAI_API_KEY')
 
 
 def collect_connections(nodes, edges):
-  graph = get_full_graph()
-  triplets = []
+    graph = get_full_graph()
+    triplets = []
 
-  # First, directly process the edges to construct triplets for these specific relationships
-  for edge in edges:
-      from_id = edge['from_temp_id']
-      to_id = edge['to_temp_id']
-      # Attempt to retrieve the relationship's description directly, or construct a fallback description
-      relationship_desc = edge.get('data', {}).get('snippet', f'Unknown relationship from {from_id} to {to_id}')
-      triplets.append(relationship_desc)
+    # Create a lookup for node names
+    node_id_to_name = {node['id']: node['name'] for node in nodes}
+    
+    # Add nodes from the graph to the lookup
+    for entity_type, entity_dict in graph['entities'].items():
+        for node_id, node_data in entity_dict.items():
+            if node_id not in node_id_to_name:
+                node_id_to_name[node_id] = node_data['data'].get('name', 'Unknown')
 
-  # Create a set of node temp IDs from the input nodes for quick lookup
-  node_temp_ids = {node['temp_id'] for node in nodes}
+    # Directly process the edges to construct triplets
+    for edge in edges:
+        from_id = edge['from_temp_id']
+        to_id = edge['to_temp_id']
+        relationship_type = edge['relationship']
+        from_node_name = node_id_to_name.get(from_id, 'Unknown')
+        to_node_name = node_id_to_name.get(to_id, 'Unknown')
+        triplet = f"{from_node_name} {relationship_type} {to_node_name}"
+        triplets.append(triplet)
 
-  # Then, for each node in the input list, use find_connected_triplets to find all additional triplets
-  for node in nodes:
-      node_temp_id = node['temp_id']
-      additional_triplets = find_connected_triplets(node_temp_id, graph)
-      triplets.extend(additional_triplets)
+    # Find all additional triplets for each node in the input list
+    for node in nodes:
+        if 'temp_id' in node:
+            node_temp_id = node['temp_id']
+            additional_triplets = find_connected_triplets(node_temp_id, graph, node_id_to_name)
+            triplets.extend(additional_triplets)
 
-  return triplets
+    return triplets
 
-def find_connected_triplets(node_id, graph, exclude_id=None):
-    """
-    Find all triplets for a given node except those connected to exclude_id.
-    """
+def find_connected_triplets(node_id, graph, node_id_to_name, exclude_id=None):
     connected_triplets = []
     for relationship in graph['relationships']:
-        # Check if the relationship involves the node in question and is not excluded
         if (relationship['from_id'] == node_id and relationship['to_id'] != exclude_id) or (relationship['to_id'] == node_id and relationship['from_id'] != exclude_id):
-            # Construct the triplet description using the snippet or a default format
-            from_node_name = next((node['data']['name'] for entity_type, entities in graph['entities'].items() for _, node in entities.items() if node['data']['temp_id'] == relationship['from_id']), 'Unknown')
-            to_node_name = next((node['data']['name'] for entity_type, entities in graph['entities'].items() for _, node in entities.items() if node['data']['temp_id'] == relationship['to_id']), 'Unknown')
+            from_node_name = node_id_to_name.get(relationship['from_id'], 'Unknown')
+            to_node_name = node_id_to_name.get(relationship['to_id'], 'Unknown')
             relationship_type = relationship.get('relationship', 'connected to')
-            triplet = f"{from_node_name} {relationship_type} {to_node_name}" if 'snippet' not in relationship else relationship['snippet']
+            triplet = f"{from_node_name} {relationship_type} {to_node_name}"
             print(triplet)
             connected_triplets.append(triplet)
-    
+
     return connected_triplets
-
-
 
 
 def generate_search_parameters(input_text):
@@ -80,6 +82,7 @@ def ai_search(app, input_text):
         load_graph_summaries(app)
 
         # Print the loaded graph summaries
+        print("wazzzzap")
         print("Loaded Graph Summaries:")
         print(app.config["GRAPH_SUMMARIES"])
 
@@ -100,7 +103,7 @@ def ai_search(app, input_text):
         
         if selected_db is None:
             return jsonify({"error": "No suitable database found for the search query"}), 400
-
+        current_app.config["SELECTED_DB"] = selected_db
         # Generate search parameters based on the user's input
         search_parameters = generate_search_parameters(input_text)
         print("search_parameters", search_parameters)
@@ -113,6 +116,8 @@ def ai_search(app, input_text):
 
         # Iterate through each dictionary in the list of dictionaries
         for param in search_parameters:
+            print('yup')
+            print(param)
             # Assuming each dictionary in the list has only one key-value pair you want to use
             for key, value in param.items():
                 param_dict = {key: value}
@@ -129,7 +134,7 @@ def ai_search(app, input_text):
 
         # Construct a message to send to GPT based on triplets
         if triplets:
-            message = f"Based on the user input '{input_text}', here are the relationships found: {', '.join(triplets)}. Generate an insightful response."
+            message = f"Based on the user input '{input_text}', here are the relationships found: {', '.join(triplets)}. Simply state the relations in natural language concisely."
         else:
             message = f"Based on the user input '{input_text}', no specific relationships were found. Generate a general insight."
 

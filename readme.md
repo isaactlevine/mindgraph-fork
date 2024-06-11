@@ -1,8 +1,12 @@
 # A Fork of Mindgraph With Added Functionality
 
-- Added Neo4J integration
-- Added ability to save and dynamically load multiple KGs saved to a single Neo4j DBMS instance
-- Added feature where there is a natural language description of each avaialble db stored by the application, and it is updated every time there is a change to the respective graph
+I added Neo4J integration and the ability to save, load, and query multiple KGs saved to a single Neo4j DBMS instance.
+
+**This was to implement cross-graph searches, the ability to determine and subsequently query the most relevant graph from a number of different independent graphs with respect to the query.**
+
+The app keeps an updated contextual summary of each KG (updates are run with each change to the graph), and when a query is run, the app takes the cosine similarity between the query and each graph summary to determine which graph is the most relevant, and then queries it.
+
+This makes it so given an ever-increasing set of graphs that might altogether be globally inconsistent, the system will navigate to the most appropriate, locally consistent graph.
 
 
 # MindGraph
