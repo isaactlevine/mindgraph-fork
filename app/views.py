@@ -13,7 +13,6 @@
 # other parts of the application about the creation, update, or deletion of entities.
 
 from app.integrations.database.neo4j import Neo4jDBIntegration
-from .models import set_database_integration
 from flask import (
     Blueprint,
     send_from_directory,
@@ -78,7 +77,6 @@ def get_graph_data():
             filtered_entities[k] = [item for item in v if item is not None]
         else:
             filtered_entities[k] = v
-
     return current_app.response_class(
         json.dumps(filtered_entities, cls=CustomJSONEncoder),
         mimetype='application/json'

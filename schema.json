@@ -84,5 +84,27 @@
       "Targets/Addresses Market": "Market segments the product targets.",
       "Used by/Utilized by": "Typical users or applications of the product."
     }
+  },
+  "Location": {
+    "node_type": "Location",
+    "edge_types": {
+      "name": "Name of the location.",
+      "description": "Description of the location.",
+      "Located in": "Geographical coordinates or region.",
+      "Contains": "Entities contained within the location (e.g., organizations, landmarks).",
+      "Population": "Population of the location, if applicable.",
+      "Related to": "Related historical or cultural significance."
+    }
+  },
+  "Character": {
+    "node_type": "Character",
+    "edge_types": {
+      "name": "Name of the character.",
+      "description": "Description of the character.",
+      "Appears in": "Works or stories where the character appears.",
+      "Role": "Role or archetype the character represents.",
+      "Created by": "Author or creator of the character.",
+      "Related to": "Other characters or concepts the character is related to."
+    }
   }
 }

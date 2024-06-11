@@ -229,34 +229,34 @@ $(document).ready(function () {
   });
 
   function transformDataToCytoscapeFormat(data) {
-    const { entities, relationships } = data; // Adjusted for new data structure
+    const { entities, relationships } = data;
 
     const nodes = [];
-    // Iterate over each entity type (e.g., 'people', 'organizations') and their entities
     Object.entries(entities).forEach(([entityType, entityGroup]) => {
-      Object.entries(entityGroup).forEach(([entityId, entityData]) => {
-        nodes.push({
-          data: {
-            id: entityId,
-            name: entityData.data.name, // Assuming 'name' is a consistent property
-            type: entityType, // Used for styling based on the entity type
-          },
+        Object.entries(entityGroup).forEach(([entityId, entityData]) => {
+            const name = entityData.data.name || entityData.data.term || "Unnamed"; // Check for both 'name' and 'term'
+            nodes.push({
+                data: {
+                    id: entityId,
+                    name: name, // Ensure name is defined
+                    type: entityType,
+                },
+            });
         });
-      });
     });
 
     const edges = relationships.map((rel) => ({
-      data: {
-        id: "rel-" + rel.from_id + "-" + rel.to_id, // Unique ID for the edge
-        source: rel.from_id.toString(),
-        target: rel.to_id.toString(),
-        relationship: rel.snippet,
-        label: rel.relationship_type, // Optional, if you want to use relationship types as labels
-      },
+        data: {
+            id: "rel-" + rel.from_id + "-" + rel.to_id,
+            source: rel.from_id.toString(),
+            target: rel.to_id.toString(),
+            relationship: rel.snippet,
+            label: rel.relationship_type,
+        },
     }));
 
     return { nodes, edges };
-  }
+}
 
   function updateGraphVisualization(data) {
     console.log("Updating graph visualization");
@@ -285,6 +285,7 @@ $(document).ready(function () {
       .then((response) => response.json())
       .then((data) => {
         // Assuming you have a function to update the graph with new data
+        console.log('sending data')
         console.log(data);
         updateGraphVisualization(data);
       })
@@ -435,4 +436,5 @@ $(document).ready(function () {
       .catch(error => console.error('Error:', error));
   });
 });
+
 

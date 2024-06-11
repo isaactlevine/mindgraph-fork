@@ -82,6 +82,7 @@ def load_graph_summaries(app):
     
 #     # # Assuming you have already summarized and stored some graphs
 #     summarize_and_store_graph(app, "bibibibi")
-    
+#     summarize_and_store_graph(app, "fiske") 
+#     summarize_and_store_graph(app, "neo4j")
 #     # Now print the graph summaries
 #     print_graph_summaries(app)
